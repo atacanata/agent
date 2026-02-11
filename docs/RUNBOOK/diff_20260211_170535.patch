@@ -1,0 +1,338 @@
+diff --git a/docs/API/openapi.yaml b/docs/API/openapi.yaml
+new file mode 100644
+index 0000000..8c6d651
+--- /dev/null
++++ b/docs/API/openapi.yaml
+@@ -0,0 +1,202 @@
++openapi: 3.0.3
++info:
++  title: Runner API
++  version: 0.1.0
++  description: Minimal API for PRJ-001 runner (Stage B).
++servers:
++  - url: /api
++paths:
++  /health:
++    get:
++      summary: Health check
++      operationId: getHealth
++      responses:
++        "200":
++          description: OK
++          content:
++            application/json:
++              schema:
++                $ref: "#/components/schemas/Health"
++  /projects:
++    get:
++      summary: List projects
++      operationId: listProjects
++      responses:
++        "200":
++          description: Project list
++          content:
++            application/json:
++              schema:
++                type: array
++                items:
++                  $ref: "#/components/schemas/Project"
++        "500":
++          $ref: "#/components/responses/ServerError"
++  /projects/{project_id}/runs:
++    get:
++      summary: List runs for a project
++      operationId: listProjectRuns
++      parameters:
++        - $ref: "#/components/parameters/ProjectId"
++      responses:
++        "200":
++          description: Run list
++          content:
++            application/json:
++              schema:
++                type: array
++                items:
++                  $ref: "#/components/schemas/Run"
++        "404":
++          $ref: "#/components/responses/NotFound"
++        "500":
++          $ref: "#/components/responses/ServerError"
++  /projects/{project_id}/runs/{run_id}:
++    get:
++      summary: Get run details
++      operationId: getRun
++      parameters:
++        - $ref: "#/components/parameters/ProjectId"
++        - $ref: "#/components/parameters/RunId"
++      responses:
++        "200":
++          description: Run detail
++          content:
++            application/json:
++              schema:
++                $ref: "#/components/schemas/Run"
++        "404":
++          $ref: "#/components/responses/NotFound"
++        "500":
++          $ref: "#/components/responses/ServerError"
++  /projects/{project_id}/runs/{run_id}/artifacts:
++    get:
++      summary: List artifacts for a run
++      operationId: listRunArtifacts
++      parameters:
++        - $ref: "#/components/parameters/ProjectId"
++        - $ref: "#/components/parameters/RunId"
++      responses:
++        "200":
++          description: Artifact list
++          content:
++            application/json:
++              schema:
++                type: array
++                items:
++                  $ref: "#/components/schemas/Artifact"
++        "404":
++          $ref: "#/components/responses/NotFound"
++        "500":
++          $ref: "#/components/responses/ServerError"
++  /projects/{project_id}/runs/{run_id}/artifacts/{name}:
++    get:
++      summary: Download artifact
++      operationId: getRunArtifact
++      parameters:
++        - $ref: "#/components/parameters/ProjectId"
++        - $ref: "#/components/parameters/RunId"
++        - $ref: "#/components/parameters/ArtifactName"
++      responses:
++        "200":
++          description: Artifact content
++          content:
++            application/octet-stream:
++              schema:
++                type: string
++                format: binary
++        "404":
++          $ref: "#/components/responses/NotFound"
++        "500":
++          $ref: "#/components/responses/ServerError"
++components:
++  parameters:
++    ProjectId:
++      name: project_id
++      in: path
++      required: true
++      schema:
++        type: string
++    RunId:
++      name: run_id
++      in: path
++      required: true
++      schema:
++        type: string
++    ArtifactName:
++      name: name
++      in: path
++      required: true
++      schema:
++        type: string
++  responses:
++    NotFound:
++      description: Resource not found
++      content:
++        application/json:
++          schema:
++            $ref: "#/components/schemas/Error"
++    ServerError:
++      description: Server error
++      content:
++        application/json:
++          schema:
++            $ref: "#/components/schemas/Error"
++  schemas:
++    Health:
++      type: object
++      properties:
++        status:
++          type: string
++          example: ok
++      required: [status]
++    Project:
++      type: object
++      properties:
++        id:
++          type: string
++        name:
++          type: string
++        description:
++          type: string
++      required: [id, name]
++    Run:
++      type: object
++      properties:
++        id:
++          type: string
++        project_id:
++          type: string
++        status:
++          type: string
++          enum: [queued, running, blocked, failed, succeeded]
++        checkpoint:
++          type: string
++          enum: [A, B, C]
++        started_at:
++          type: string
++          format: date-time
++        updated_at:
++          type: string
++          format: date-time
++      required: [id, project_id, status, checkpoint]
++    Artifact:
++      type: object
++      properties:
++        name:
++          type: string
++        content_type:
++          type: string
++        size_bytes:
++          type: integer
++          format: int64
++        updated_at:
++          type: string
++          format: date-time
++      required: [name]
++    Error:
++      type: object
++      properties:
++        detail:
++          type: string
++      required: [detail]
+diff --git a/docs/RUNBOOK/ci_20260211_170535.log b/docs/RUNBOOK/ci_20260211_170535.log
+new file mode 100644
+index 0000000..d52d5b7
+--- /dev/null
++++ b/docs/RUNBOOK/ci_20260211_170535.log
+@@ -0,0 +1,2 @@
++[ci] start
++[ci] done
+diff --git a/docs/RUNBOOK/review_20260211_170535.md b/docs/RUNBOOK/review_20260211_170535.md
+new file mode 100644
+index 0000000..ffdfdc7
+--- /dev/null
++++ b/docs/RUNBOOK/review_20260211_170535.md
+@@ -0,0 +1,6 @@
++# Review
++
++- Run ID: ${RUN_ID}
++- Scope: Stage B docs only
++
++VERDICT: APPROVE
+diff --git a/docs/RUNBOOK/test_20260211_170535.md b/docs/RUNBOOK/test_20260211_170535.md
+new file mode 100644
+index 0000000..70fb6a2
+--- /dev/null
++++ b/docs/RUNBOOK/test_20260211_170535.md
+@@ -0,0 +1,6 @@
++# Test Run
++
++- Run ID: ${RUN_ID}
++- Scope: Stage B docs only
++
++RESULT: PASS
+diff --git a/docs/UX/UX-001.md b/docs/UX/UX-001.md
+new file mode 100644
+index 0000000..2c2792a
+--- /dev/null
++++ b/docs/UX/UX-001.md
+@@ -0,0 +1,92 @@
++# UX-001: Runner UX (Stage B)
++
++## Overview
++Runner arayüzü, bir projeyi seçip Stage A/B/C checkpoint akışını izlemek, runbook artefaktlarını görmek ve her checkpoint sonunda "Approve to proceed" kapısını yönetmek için tasarlanır.
++
++## Primary Flows
++1. Project Selection
++- User opens runner.
++- System loads project list.
++- User selects a project to view runs and current checkpoint status.
++
++2. Checkpoint A/B/C (per run)
++- User opens a run and sees checkpoint timeline (A, B, C).
++- Each checkpoint shows status and required outputs.
++- On completion, user triggers "Approve to proceed" gate.
++- If approved, next checkpoint unlocks; if rejected, checkpoint returns to "Changes requested".
++
++3. Runbook Viewer
++- From a run, user opens the runbook viewer.
++- Viewer lists artifacts (ci/test/diff/review) with timestamps.
++- User can open/download artifacts.
++
++4. Approve to Proceed Gate
++- Approver reviews required artifacts and checklist.
++- Approver submits approval with optional note.
++- System records approval and unlocks next checkpoint.
++
++## Screens
++### Project Selection
++- Purpose: Choose a project to manage.
++- Primary actions: Select project, refresh list.
++- Content: Project name, last run status, last updated.
++
++States
++- Loading: list skeleton.
++- Empty: "No projects found" with refresh.
++- Error: "Failed to load projects" with retry.
++
++### Checkpoint A/B/C
++- Purpose: Track progress for Stage A/B/C in a run.
++- Primary actions: Open required docs, open runbook, request approval.
++- Content: Timeline with status badges and gate status.
++
++States
++- Not started: checklist empty, gate disabled.
++- In progress: checklist partial, gate disabled.
++- Ready for approval: checklist complete, gate enabled.
++- Approved: locked with approval summary.
++- Changes requested: shows feedback and rework required.
++- Blocked: missing runbook artifacts or prerequisites.
++
++Error cases
++- Run not found.
++- Stage artifacts missing (e.g., no `ci_*.log`).
++- Gate rejected due to incomplete checklist.
++
++### Runbook Viewer
++- Purpose: Inspect run artifacts.
++- Primary actions: View artifact, download artifact, filter by type.
++- Content: Artifact list (name, size, updated time), preview panel.
++
++States
++- Loading: artifact list skeleton.
++- Empty: "No artifacts available".
++- Error: "Failed to load artifacts" with retry.
++
++Error cases
++- Artifact not found.
++- Artifact download failed.
++
++### Approve to Proceed
++- Purpose: Enforce explicit gate between checkpoints.
++- Primary actions: Approve, request changes.
++- Required inputs: Approver name (or identity), optional notes.
++
++States
++- Pending: awaiting decision.
++- Approved: approval recorded and next checkpoint unlocked.
++- Rejected: changes requested, checkpoint remains locked.
++
++Error cases
++- Unauthorized or missing approver.
++- Approval attempted before checklist completion.
++- Concurrent approval conflict (already approved by another user).
++
++## Status Model
++- Run status: `queued`, `running`, `blocked`, `failed`, `succeeded`.
++- Checkpoint status: `not_started`, `in_progress`, `ready_for_approval`, `approved`, `changes_requested`, `blocked`.
++
++## Non-Goals (Stage B)
++- No code generation or UI implementation.
++- No external integrations beyond repository docs/runbook artifacts.
