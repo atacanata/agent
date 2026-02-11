@@ -1,11 +1,32 @@
 project_id: PRJ-001
-title: "Agent AI Team Runner"
-goal: "TODO"
+title: "Agent AI Team Runner (VDS)"
+goal: >
+  Ubuntu VDS üzerinde çalışan, doküman→kod→test→runbook disiplinini uygulayan
+  ve Codex/Claude ile yönetilebilen bir proje şablonu (AI_TEAM) kurmak.
+  İlk hedef: checkpoint artefaktlarını düzenli üreten çalışır bir runner çıkarmak.
+
 mvp_scope:
-  - "TODO"
+  - Repo iskeleti: docs/, tasks/, scripts/ yapısı ve net çalışma kuralları (AGENTS/GOVERNANCE)
+  - Checkpoint akışı: Stage A (PRD+ADR), Stage B (UX+OpenAPI), Stage C (Code+CI+Runbook)
+  - Lokal CI: scripts/ci_local.sh (node veya python algılayıp temel test/komut çalıştırır)
+  - Runbook: her koşuda docs/RUNBOOK altında ci/test/diff/review artefaktları
+  - Gate: Stage C gate scripti RESULT: PASS ve VERDICT: APPROVE kontrol eder
+  - Codex kullanım prosedürü: önce read-only, sonra tek dosya/küçük diff
+
 non_goals:
-  - "TODO"
+  - Kamera video analizi / GPU worker altyapısı
+  - SAP canlı entegrasyonu ve üretim sistemine bağlanma
+  - Web-hosting kontrol panelleri (cPanel/plesk)
+  - Otomatik mail/webhook sistemleri
+
 success_metrics:
-  - "TODO"
-stack_profile: "TODO (web_vite_react_ts or api_fastapi_py)"
-notes: "TODO"
+  - docs/PRD/PRD-001.md ve docs/ADR/ADR-001.md üretilir, sürümlenir
+  - Stage C sonunda docs/RUNBOOK içinde 4 artefakt oluşur: ci_*.log, test_*.md, diff_*.patch, review_*.md
+  - gate_stage_c.sh PASS/APPROVE yoksa fail, varsa PASS döner
+  - Repo kopyalanarak 30 dakikada yeni projeye başlangıç şablonu çıkarılabilir
+
+stack_profile: "api_fastapi_py"
+
+notes: >
+  Bu proje runner/şablon projesidir. Sonraki projeler (kamera/görsel analiz, SAP eşleştirme)
+  bu şablon üzerinden yürütülecektir.
