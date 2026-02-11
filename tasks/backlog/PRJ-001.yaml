@@ -1,0 +1,11 @@
+project_id: PRJ-001
+title: "Agent AI Team Runner"
+goal: "TODO"
+mvp_scope:
+  - "TODO"
+non_goals:
+  - "TODO"
+success_metrics:
+  - "TODO"
+stack_profile: "TODO (web_vite_react_ts or api_fastapi_py)"
+notes: "TODO"
