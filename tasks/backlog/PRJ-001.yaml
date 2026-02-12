@@ -6,12 +6,12 @@ goal: >
   İlk hedef: checkpoint artefaktlarını düzenli üreten çalışır bir runner çıkarmak.
 
 mvp_scope:
-  - Repo iskeleti: docs/, tasks/, scripts/ yapısı ve net çalışma kuralları (AGENTS/GOVERNANCE)
-  - Checkpoint akışı: Stage A (PRD+ADR), Stage B (UX+OpenAPI), Stage C (Code+CI+Runbook)
-  - Lokal CI: scripts/ci_local.sh (node veya python algılayıp temel test/komut çalıştırır)
-  - Runbook: her koşuda docs/RUNBOOK altında ci/test/diff/review artefaktları
-  - Gate: Stage C gate scripti RESULT: PASS ve VERDICT: APPROVE kontrol eder
-  - Codex kullanım prosedürü: önce read-only, sonra tek dosya/küçük diff
+  - "Repo iskeleti: docs/, tasks/, scripts/ yapısı ve net çalışma kuralları (AGENTS/GOVERNANCE)"
+  - "Checkpoint akışı: Stage A (PRD+ADR), Stage B (UX+OpenAPI), Stage C (Code+CI+Runbook)"
+  - "Lokal CI: scripts/ci_local.sh (node veya python algılayıp temel test/komut çalıştırır)"
+  - "Runbook: her koşuda docs/RUNBOOK altında ci/test/diff/review artefaktları"
+  - "Gate: Stage C gate scripti RESULT: PASS ve VERDICT: APPROVE kontrol eder"
+  - "Codex kullanım prosedürü: önce read-only, sonra tek dosya/küçük diff"
 
 non_goals:
   - Kamera video analizi / GPU worker altyapısı
