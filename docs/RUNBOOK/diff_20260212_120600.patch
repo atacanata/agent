@@ -1,0 +1,398 @@
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..21d0b89
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1 @@
++.venv/
+diff --git a/api/__init__.py b/api/__init__.py
+new file mode 100644
+index 0000000..3ecd4e3
+--- /dev/null
++++ b/api/__init__.py
+@@ -0,0 +1 @@
++"""API package for PRJ-001 runner service."""
+diff --git a/api/__pycache__/__init__.cpython-312.pyc b/api/__pycache__/__init__.cpython-312.pyc
+new file mode 100644
+index 0000000..2c5628d
+Binary files /dev/null and b/api/__pycache__/__init__.cpython-312.pyc differ
+diff --git a/api/__pycache__/main.cpython-312.pyc b/api/__pycache__/main.cpython-312.pyc
+new file mode 100644
+index 0000000..22580be
+Binary files /dev/null and b/api/__pycache__/main.cpython-312.pyc differ
+diff --git a/api/__pycache__/models.cpython-312.pyc b/api/__pycache__/models.cpython-312.pyc
+new file mode 100644
+index 0000000..a5c4525
+Binary files /dev/null and b/api/__pycache__/models.cpython-312.pyc differ
+diff --git a/api/__pycache__/repository.cpython-312.pyc b/api/__pycache__/repository.cpython-312.pyc
+new file mode 100644
+index 0000000..e13e15c
+Binary files /dev/null and b/api/__pycache__/repository.cpython-312.pyc differ
+diff --git a/api/main.py b/api/main.py
+new file mode 100644
+index 0000000..c2a624b
+--- /dev/null
++++ b/api/main.py
+@@ -0,0 +1,75 @@
++from __future__ import annotations
++
++import mimetypes
++
++from fastapi import FastAPI, HTTPException
++from fastapi.responses import FileResponse
++
++from .models import Artifact, Health, Project, Run
++from .repository import (
++    get_artifact_path,
++    get_run,
++    list_artifacts,
++    list_projects,
++    list_runs,
++    project_exists,
++)
++
++app = FastAPI(
++    title="Runner API",
++    version="0.1.0",
++    description="Minimal API for PRJ-001 runner (Stage B).",
++    servers=[{"url": "/api"}],
++)
++
++
++@app.get("/health", response_model=Health)
++async def health() -> Health:
++    return Health(status="ok")
++
++
++@app.get("/projects", response_model=list[Project])
++async def projects() -> list[Project]:
++    return list_projects()
++
++
++@app.get("/projects/{project_id}/runs", response_model=list[Run])
++async def project_runs(project_id: str) -> list[Run]:
++    if not project_exists(project_id):
++        raise HTTPException(status_code=404, detail="Resource not found")
++    return list_runs(project_id)
++
++
++@app.get("/projects/{project_id}/runs/{run_id}", response_model=Run)
++async def project_run(project_id: str, run_id: str) -> Run:
++    if not project_exists(project_id):
++        raise HTTPException(status_code=404, detail="Resource not found")
++
++    run = get_run(project_id, run_id)
++    if run is None:
++        raise HTTPException(status_code=404, detail="Resource not found")
++    return run
++
++
++@app.get("/projects/{project_id}/runs/{run_id}/artifacts", response_model=list[Artifact])
++async def run_artifacts(project_id: str, run_id: str) -> list[Artifact]:
++    if not project_exists(project_id):
++        raise HTTPException(status_code=404, detail="Resource not found")
++    if get_run(project_id, run_id) is None:
++        raise HTTPException(status_code=404, detail="Resource not found")
++    return list_artifacts(run_id)
++
++
++@app.get("/projects/{project_id}/runs/{run_id}/artifacts/{name}")
++async def run_artifact(project_id: str, run_id: str, name: str) -> FileResponse:
++    if not project_exists(project_id):
++        raise HTTPException(status_code=404, detail="Resource not found")
++    if get_run(project_id, run_id) is None:
++        raise HTTPException(status_code=404, detail="Resource not found")
++
++    artifact_path = get_artifact_path(run_id, name)
++    if artifact_path is None:
++        raise HTTPException(status_code=404, detail="Resource not found")
++
++    media_type = mimetypes.guess_type(artifact_path.name)[0] or "application/octet-stream"
++    return FileResponse(path=artifact_path, media_type=media_type, filename=artifact_path.name)
+diff --git a/api/models.py b/api/models.py
+new file mode 100644
+index 0000000..dfbda6f
+--- /dev/null
++++ b/api/models.py
+@@ -0,0 +1,32 @@
++from __future__ import annotations
++
++from datetime import datetime
++from typing import Literal
++
++from pydantic import BaseModel
++
++
++class Health(BaseModel):
++    status: str
++
++
++class Project(BaseModel):
++    id: str
++    name: str
++    description: str | None = None
++
++
++class Run(BaseModel):
++    id: str
++    project_id: str
++    status: Literal["queued", "running", "blocked", "failed", "succeeded"]
++    checkpoint: Literal["A", "B", "C"]
++    started_at: datetime | None = None
++    updated_at: datetime | None = None
++
++
++class Artifact(BaseModel):
++    name: str
++    content_type: str | None = None
++    size_bytes: int | None = None
++    updated_at: datetime | None = None
+diff --git a/docs/RUNBOOK/ci_20260211_171241.log b/docs/RUNBOOK/ci_20260211_171241.log
+new file mode 100644
+index 0000000..544e4bf
+--- /dev/null
++++ b/docs/RUNBOOK/ci_20260211_171241.log
+@@ -0,0 +1,15 @@
++[ci] start
++[ci] python project detected
++Requirement already satisfied: pip in ./.venv/lib/python3.12/site-packages (24.0)
++WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7a2e3c77e8a0>: Failed to establish a new connection: [Errno -2] Name or service not known')': /simple/pip/
++WARNING: Retrying (Retry(total=3, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7a2e3c5595e0>: Failed to establish a new connection: [Errno -2] Name or service not known')': /simple/pip/
++WARNING: Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7a2e3c5599d0>: Failed to establish a new connection: [Errno -2] Name or service not known')': /simple/pip/
++WARNING: Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7a2e3c559be0>: Failed to establish a new connection: [Errno -2] Name or service not known')': /simple/pip/
++WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7a2e3c559df0>: Failed to establish a new connection: [Errno -2] Name or service not known')': /simple/pip/
++WARNING: Retrying (Retry(total=4, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7a0f8404fe90>: Failed to establish a new connection: [Errno -2] Name or service not known')': /simple/fastapi/
++WARNING: Retrying (Retry(total=3, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7a0f841354c0>: Failed to establish a new connection: [Errno -2] Name or service not known')': /simple/fastapi/
++WARNING: Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7a0f84086660>: Failed to establish a new connection: [Errno -2] Name or service not known')': /simple/fastapi/
++WARNING: Retrying (Retry(total=1, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7a0f840868d0>: Failed to establish a new connection: [Errno -2] Name or service not known')': /simple/fastapi/
++WARNING: Retrying (Retry(total=0, connect=None, read=None, redirect=None, status=None)) after connection broken by 'NewConnectionError('<pip._vendor.urllib3.connection.HTTPSConnection object at 0x7a0f84086ae0>: Failed to establish a new connection: [Errno -2] Name or service not known')': /simple/fastapi/
++ERROR: Could not find a version that satisfies the requirement fastapi (from versions: none)
++ERROR: No matching distribution found for fastapi
+diff --git a/docs/RUNBOOK/ci_20260212_120600.log b/docs/RUNBOOK/ci_20260212_120600.log
+new file mode 100644
+index 0000000..17692f5
+--- /dev/null
++++ b/docs/RUNBOOK/ci_20260212_120600.log
+@@ -0,0 +1,28 @@
++[ci] start
++[ci] python project detected
++Requirement already satisfied: pip in ./.venv/lib/python3.12/site-packages (26.0.1)
++Requirement already satisfied: fastapi in ./.venv/lib/python3.12/site-packages (from -r requirements.txt (line 1)) (0.128.7)
++Requirement already satisfied: uvicorn in ./.venv/lib/python3.12/site-packages (from -r requirements.txt (line 2)) (0.40.0)
++Requirement already satisfied: pyyaml in ./.venv/lib/python3.12/site-packages (from -r requirements.txt (line 3)) (6.0.3)
++Requirement already satisfied: pydantic in ./.venv/lib/python3.12/site-packages (from -r requirements.txt (line 4)) (2.12.5)
++Requirement already satisfied: pytest in ./.venv/lib/python3.12/site-packages (from -r requirements.txt (line 5)) (9.0.2)
++Requirement already satisfied: httpx in ./.venv/lib/python3.12/site-packages (from -r requirements.txt (line 6)) (0.28.1)
++Requirement already satisfied: starlette<1.0.0,>=0.40.0 in ./.venv/lib/python3.12/site-packages (from fastapi->-r requirements.txt (line 1)) (0.52.1)
++Requirement already satisfied: typing-extensions>=4.8.0 in ./.venv/lib/python3.12/site-packages (from fastapi->-r requirements.txt (line 1)) (4.15.0)
++Requirement already satisfied: typing-inspection>=0.4.2 in ./.venv/lib/python3.12/site-packages (from fastapi->-r requirements.txt (line 1)) (0.4.2)
++Requirement already satisfied: annotated-doc>=0.0.2 in ./.venv/lib/python3.12/site-packages (from fastapi->-r requirements.txt (line 1)) (0.0.4)
++Requirement already satisfied: anyio<5,>=3.6.2 in ./.venv/lib/python3.12/site-packages (from starlette<1.0.0,>=0.40.0->fastapi->-r requirements.txt (line 1)) (4.12.1)
++Requirement already satisfied: idna>=2.8 in ./.venv/lib/python3.12/site-packages (from anyio<5,>=3.6.2->starlette<1.0.0,>=0.40.0->fastapi->-r requirements.txt (line 1)) (3.11)
++Requirement already satisfied: click>=7.0 in ./.venv/lib/python3.12/site-packages (from uvicorn->-r requirements.txt (line 2)) (8.3.1)
++Requirement already satisfied: h11>=0.8 in ./.venv/lib/python3.12/site-packages (from uvicorn->-r requirements.txt (line 2)) (0.16.0)
++Requirement already satisfied: annotated-types>=0.6.0 in ./.venv/lib/python3.12/site-packages (from pydantic->-r requirements.txt (line 4)) (0.7.0)
++Requirement already satisfied: pydantic-core==2.41.5 in ./.venv/lib/python3.12/site-packages (from pydantic->-r requirements.txt (line 4)) (2.41.5)
++Requirement already satisfied: iniconfig>=1.0.1 in ./.venv/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 5)) (2.3.0)
++Requirement already satisfied: packaging>=22 in ./.venv/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 5)) (26.0)
++Requirement already satisfied: pluggy<2,>=1.5 in ./.venv/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 5)) (1.6.0)
++Requirement already satisfied: pygments>=2.7.2 in ./.venv/lib/python3.12/site-packages (from pytest->-r requirements.txt (line 5)) (2.19.2)
++Requirement already satisfied: certifi in ./.venv/lib/python3.12/site-packages (from httpx->-r requirements.txt (line 6)) (2026.1.4)
++Requirement already satisfied: httpcore==1.* in ./.venv/lib/python3.12/site-packages (from httpx->-r requirements.txt (line 6)) (1.0.9)
++.....                                                                    [100%]
++5 passed in 0.93s
++[ci] done
+diff --git a/docs/RUNBOOK/diff_20260211_171241.patch b/docs/RUNBOOK/diff_20260211_171241.patch
+new file mode 100644
+index 0000000..e69de29
+diff --git a/docs/RUNBOOK/review_20260211_171241.md b/docs/RUNBOOK/review_20260211_171241.md
+new file mode 100644
+index 0000000..eb943ad
+--- /dev/null
++++ b/docs/RUNBOOK/review_20260211_171241.md
+@@ -0,0 +1,7 @@
++# Review
++
++RUN_ID: 20260211_171241
++VERDICT: REQUEST_CHANGES
++
++- Implementation and tests added for Stage C API.
++- CI/test execution blocked by offline dependency installation failure in sandbox.
+diff --git a/docs/RUNBOOK/test_20260211_171241.md b/docs/RUNBOOK/test_20260211_171241.md
+new file mode 100644
+index 0000000..f26d26a
+--- /dev/null
++++ b/docs/RUNBOOK/test_20260211_171241.md
+@@ -0,0 +1,8 @@
++# Test Report
++
++RUN_ID: 20260211_171241
++RESULT: FAIL
++
++- `scripts/ci_local.sh` executed.
++- Failure reason: dependency installation failed due offline package index access (`fastapi` could not be resolved).
++- `pytest` could not be executed in this environment.
+diff --git a/requirements.txt b/requirements.txt
+new file mode 100644
+index 0000000..87356b2
+--- /dev/null
++++ b/requirements.txt
+@@ -0,0 +1,6 @@
++fastapi
++uvicorn
++pyyaml
++pydantic
++pytest
++httpx
+diff --git a/scripts/run_api.sh b/scripts/run_api.sh
+new file mode 100755
+index 0000000..b22f76a
+--- /dev/null
++++ b/scripts/run_api.sh
+@@ -0,0 +1,4 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++uvicorn api.main:app --host 0.0.0.0 --port 8000
+diff --git a/tests/__pycache__/conftest.cpython-312-pytest-9.0.2.pyc b/tests/__pycache__/conftest.cpython-312-pytest-9.0.2.pyc
+new file mode 100644
+index 0000000..6b0dc6c
+Binary files /dev/null and b/tests/__pycache__/conftest.cpython-312-pytest-9.0.2.pyc differ
+diff --git a/tests/__pycache__/test_api.cpython-312-pytest-9.0.2.pyc b/tests/__pycache__/test_api.cpython-312-pytest-9.0.2.pyc
+new file mode 100644
+index 0000000..9206011
+Binary files /dev/null and b/tests/__pycache__/test_api.cpython-312-pytest-9.0.2.pyc differ
+diff --git a/tests/__pycache__/test_api.cpython-312.pyc b/tests/__pycache__/test_api.cpython-312.pyc
+new file mode 100644
+index 0000000..e89f494
+Binary files /dev/null and b/tests/__pycache__/test_api.cpython-312.pyc differ
+diff --git a/tests/conftest.py b/tests/conftest.py
+new file mode 100644
+index 0000000..17cdbe1
+--- /dev/null
++++ b/tests/conftest.py
+@@ -0,0 +1,6 @@
++from pathlib import Path
++import sys
++
++ROOT = Path(__file__).resolve().parents[1]
++if str(ROOT) not in sys.path:
++    sys.path.insert(0, str(ROOT))
+diff --git a/tests/test_api.py b/tests/test_api.py
+new file mode 100644
+index 0000000..3dcae26
+--- /dev/null
++++ b/tests/test_api.py
+@@ -0,0 +1,112 @@
++from __future__ import annotations
++
++import asyncio
++from pathlib import Path
++
++import pytest
++from httpx import ASGITransport, AsyncClient
++
++from api.main import app
++from api import repository
++
++
++@pytest.fixture()
++def seeded_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, str]:
++    backlog_dir = tmp_path / "tasks" / "backlog"
++    runbook_dir = tmp_path / "docs" / "RUNBOOK"
++    backlog_dir.mkdir(parents=True)
++    runbook_dir.mkdir(parents=True)
++
++    (backlog_dir / "PRJ-001.yaml").write_text(
++        "project_id: PRJ-001\n"
++        "title: Agent AI Team Runner (VDS)\n"
++        "goal: Sample goal\n",
++        encoding="utf-8",
++    )
++
++    run_id = "20260211_999999"
++    (runbook_dir / f"ci_{run_id}.log").write_text("ci output\n", encoding="utf-8")
++    (runbook_dir / f"test_{run_id}.md").write_text("RESULT: PASS\n", encoding="utf-8")
++    (runbook_dir / f"review_{run_id}.md").write_text("VERDICT: APPROVE\n", encoding="utf-8")
++    (runbook_dir / f"diff_{run_id}.patch").write_text("diff --git a/x b/x\n", encoding="utf-8")
++
++    monkeypatch.setattr(repository, "BACKLOG_DIR", backlog_dir)
++    monkeypatch.setattr(repository, "RUNBOOK_DIR", runbook_dir)
++
++    return {"project_id": "PRJ-001", "run_id": run_id}
++
++
++def _request(method: str, path: str):
++    async def _do():
++        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
++            return await client.request(method, path)
++
++    return asyncio.run(_do())
++
++
++def test_health_endpoint() -> None:
++    response = _request("GET", "/health")
++
++    assert response.status_code == 200
++    assert response.json() == {"status": "ok"}
++
++
++def test_projects_endpoint(seeded_repo: dict[str, str]) -> None:
++    response = _request("GET", "/projects")
++
++    assert response.status_code == 200
++    payload = response.json()
++    assert len(payload) == 1
++    assert payload[0]["id"] == seeded_repo["project_id"]
++    assert payload[0]["name"] == "Agent AI Team Runner (VDS)"
++
++
++def test_runs_and_run_detail_endpoints(seeded_repo: dict[str, str]) -> None:
++    project_id = seeded_repo["project_id"]
++    run_id = seeded_repo["run_id"]
++
++    runs_response = _request("GET", f"/projects/{project_id}/runs")
++    assert runs_response.status_code == 200
++    runs = runs_response.json()
++    assert len(runs) == 1
++    assert runs[0]["id"] == run_id
++    assert runs[0]["status"] == "succeeded"
++    assert runs[0]["checkpoint"] == "C"
++
++    run_response = _request("GET", f"/projects/{project_id}/runs/{run_id}")
++    assert run_response.status_code == 200
++    assert run_response.json()["id"] == run_id
++
++
++def test_artifacts_list_and_download_endpoints(seeded_repo: dict[str, str]) -> None:
++    project_id = seeded_repo["project_id"]
++    run_id = seeded_repo["run_id"]
++
++    list_response = _request("GET", f"/projects/{project_id}/runs/{run_id}/artifacts")
++    assert list_response.status_code == 200
++    names = {item["name"] for item in list_response.json()}
++    assert {
++        f"ci_{run_id}.log",
++        f"test_{run_id}.md",
++        f"review_{run_id}.md",
++        f"diff_{run_id}.patch",
++    } <= names
++
++    download_response = _request(
++        "GET", f"/projects/{project_id}/runs/{run_id}/artifacts/test_{run_id}.md"
++    )
++    assert download_response.status_code == 200
++    assert "RESULT: PASS" in download_response.text
++
++
++def test_not_found_and_path_traversal(seeded_repo: dict[str, str]) -> None:
++    project_id = seeded_repo["project_id"]
++    run_id = seeded_repo["run_id"]
++
++    missing_project = _request("GET", "/projects/UNKNOWN/runs")
++    assert missing_project.status_code == 404
++
++    traversal = _request(
++        "GET", f"/projects/{project_id}/runs/{run_id}/artifacts/..%2F..%2Fetc%2Fpasswd"
++    )
++    assert traversal.status_code == 404
