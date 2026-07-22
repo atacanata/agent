@@ -1,6 +1,14 @@
+from __future__ import annotations
+
+import sys
+import tempfile
+import unittest
 from pathlib import Path
 
-from chatgpt_pm_agent import (
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from chatgpt_pm_agent import (  # noqa: E402
     CommandResult,
     CycleState,
     Decision,
@@ -12,42 +20,53 @@ from chatgpt_pm_agent import (
 )
 
 
-def test_decision_requires_explicit_line():
-    assert classify_decision("REVISE\nDüzelt.") is Decision.REVISE
-    assert classify_decision("KARAR: DONE\nTamamlandı.") is Decision.DONE
-    assert classify_decision("Bence devam edilebilir.") is Decision.UNCLEAR
+class AgentTests(unittest.TestCase):
+    def test_decision_requires_explicit_line(self) -> None:
+        self.assertIs(classify_decision("REVISE\nDüzelt."), Decision.REVISE)
+        self.assertIs(
+            classify_decision("KARAR: DONE\nTamamlandı."),
+            Decision.DONE,
+        )
+        self.assertIs(
+            classify_decision("Bence devam edilebilir."),
+            Decision.UNCLEAR,
+        )
+
+    def test_state_round_trip(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            state = CycleState(
+                1,
+                "Deneme",
+                "D:\\Deneme",
+                "Hakem",
+                "Test ekle",
+            )
+            save_state(directory, state)
+            self.assertEqual(load_state(directory).cycle_id, 1)
+
+    def test_report_shows_failure(self) -> None:
+        state = CycleState(
+            1,
+            "Deneme",
+            "D:\\Deneme",
+            "Hakem",
+            "Düzelt",
+        )
+        evidence = Evidence(
+            project_path="D:\\Deneme",
+            branch="main",
+            head="abc",
+            git_status=" M app.py",
+            git_diff="-eski\n+yeni",
+            changed_files=["app.py"],
+            tests=[CommandResult("unittest", 1, "1 failed", "")],
+        )
+        report = render_report(state, evidence)
+        self.assertIn("Test 1: FAIL", report)
+        self.assertIn("app.py", report)
+        self.assertIn("1 failed", report)
 
 
-def test_state_round_trip(tmp_path: Path):
-    state = CycleState(
-        1,
-        "Deneme",
-        "D:\\Deneme",
-        "Hakem",
-        "Test ekle",
-    )
-    save_state(tmp_path, state)
-    assert load_state(tmp_path).cycle_id == 1
-
-
-def test_report_shows_failure():
-    state = CycleState(
-        1,
-        "Deneme",
-        "D:\\Deneme",
-        "Hakem",
-        "Düzelt",
-    )
-    evidence = Evidence(
-        project_path="D:\\Deneme",
-        branch="main",
-        head="abc",
-        git_status=" M app.py",
-        git_diff="-eski\n+yeni",
-        changed_files=["app.py"],
-        tests=[CommandResult("pytest -q", 1, "1 failed", "")],
-    )
-    report = render_report(state, evidence)
-    assert "Test 1: FAIL" in report
-    assert "app.py" in report
-    assert "1 failed" in report
+if __name__ == "__main__":
+    unittest.main()
