@@ -1,0 +1,26 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "windows-mcp": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "windows-mcp",
+        "serve",
+        "--transport",
+        "stdio",
+        "--tools",
+        "Snapshot,App,Click,Type,Shortcut,Clipboard,Wait,WaitFor"
+      ],
+      "enabled": true
+    }
+  },
+  "watcher": {
+    "ignore": [
+      ".git/**",
+      ".venv/**",
+      "state/**",
+      "__pycache__/**"
+    ]
+  }
+}
