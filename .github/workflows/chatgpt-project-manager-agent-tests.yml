@@ -1,0 +1,26 @@
+name: ChatGPT Project Manager Agent Tests
+
+on:
+  push:
+    paths:
+      - "chatgpt-project-manager-agent/**"
+      - ".github/workflows/chatgpt-project-manager-agent-tests.yml"
+  pull_request:
+    paths:
+      - "chatgpt-project-manager-agent/**"
+      - ".github/workflows/chatgpt-project-manager-agent-tests.yml"
+
+jobs:
+  test:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: chatgpt-project-manager-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e ".[dev]"
+      - run: python -m pytest -q
