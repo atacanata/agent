@@ -46,7 +46,13 @@ Gereksinimler:
 - Windows-MCP
 - Yerel model sunucusu
 
-PowerShell:
+PowerShell betikleri bu oturumda engelliyse önce yalnız mevcut pencere için izin ver:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+```
+
+Ardından:
 
 ```powershell
 cd chatgpt-project-manager-agent
@@ -54,7 +60,9 @@ cd chatgpt-project-manager-agent
 Copy-Item .\config\project.example.toml .\project.toml
 ```
 
-`project.toml` içindeki proje yolunu ve ChatGPT sohbet başlığını düzenle.
+Kurulum yalnız Python sanal ortamını oluşturur ve standart kütüphane testlerini çalıştırır. İnternetten `pip`, `pytest` veya başka paket indirmez.
+
+`project.toml` zaten varsa tekrar kopyalama. İçindeki proje yolunu ve ChatGPT sohbet başlığını düzenle.
 
 ## Windows-MCP
 
