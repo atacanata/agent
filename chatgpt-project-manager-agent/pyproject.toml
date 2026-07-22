@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "chatgpt-project-manager-agent"
+version = "0.1.0"
+description = "Windows-MCP kullanan yerel ajan için deterministic ChatGPT hakem döngüsü yardımcıları."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Atacan Ata" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+chatgpt-pm = "chatgpt_pm_agent:main"
+
+[tool.hatch.build.targets.wheel]
+include = ["src/chatgpt_pm_agent.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["src"]
