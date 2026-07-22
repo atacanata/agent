@@ -1,0 +1,25 @@
+[project]
+name = "Deneme Projesi"
+path = "D:\\Projects\\deneme"
+default_test_commands = [
+  "python -m pytest -q"
+]
+
+[chatgpt]
+surface = "browser"
+conversation_title = "Deneme Projesi Hakem"
+conversation_url_contains = "chatgpt.com"
+response_stable_checks = 3
+response_poll_seconds = 2
+response_timeout_seconds = 1800
+
+[safety]
+allow_commit = false
+allow_push = false
+allow_merge = false
+allow_delete = false
+allow_reset = false
+max_cycles = 20
+
+[state]
+directory = ".\\state"
